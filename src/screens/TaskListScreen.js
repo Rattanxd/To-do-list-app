@@ -3,12 +3,14 @@ import {
   StyleSheet, Text, View, TextInput, TouchableOpacity, 
   FlatList, KeyboardAvoidingView, Platform 
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TaskListScreen({ navigation }) {
   const [task, setTask] = useState('');
+  // Added "completed: false" to our initial state
   const [tasks, setTasks] = useState([
-    { id: '101', text: 'Buy Groceries', details: 'Milk, Eggs, Bread, and Coffee' },
-    { id: '102', text: 'Finish React Project', details: 'Implement React Navigation with 3 screens.' },
+    { id: '101', text: 'Buy Groceries', details: 'Milk, Eggs, Bread, and Coffee', completed: false },
+    { id: '102', text: 'Finish React Project', details: 'Implement React Navigation with 3 screens.', completed: true },
   ]);
 
   const handleAddTask = () => {
@@ -16,7 +18,8 @@ export default function TaskListScreen({ navigation }) {
       setTasks([...tasks, { 
         id: Date.now().toString(), 
         text: task, 
-        details: 'No extra details provided yet.' 
+        details: 'No extra details provided yet.',
+        completed: false // New tasks start uncompleted
       }]);
       setTask('');
     }
@@ -26,23 +29,41 @@ export default function TaskListScreen({ navigation }) {
     setTasks(tasks.filter((item) => item.id !== id));
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.taskItem}
-      onPress={() => navigation.navigate('TaskDetail', { taskData: item })}
-    >
-      <View style={styles.taskTextContainer}>
-        <Text style={styles.taskText}>{item.text}</Text>
-        <Text style={styles.subText}>Tap to view details</Text>
-      </View>
+  // New function to toggle the completion status
+  const handleToggleComplete = (id) => {
+    setTasks(tasks.map(item => 
+      item.id === id ? { ...item, completed: !item.completed } : item
+    ));
+  };
 
-      <TouchableOpacity 
-        onPress={() => handleDeleteTask(item.id)} 
-        style={styles.deleteButton}
-      >
-        <Text style={styles.deleteText}>Delete</Text>
+  const renderItem = ({ item }) => (
+    <View style={styles.taskItem}>
+      {/* Checkbox Icon */}
+      <TouchableOpacity onPress={() => handleToggleComplete(item.id)} style={styles.checkbox}>
+        <Ionicons 
+          name={item.completed ? "checkmark-circle" : "ellipse-outline"} 
+          size={28} 
+          color={item.completed ? "#4CAF50" : "#C0C0C0"} 
+        />
       </TouchableOpacity>
-    </TouchableOpacity>
+
+      {/* Task Text Container - clicking this goes to Details */}
+      <TouchableOpacity 
+        style={styles.taskTextContainer}
+        onPress={() => navigation.navigate('TaskDetail', { taskData: item })}
+      >
+        {/* Apply conditional styling based on 'item.completed' */}
+        <Text style={[styles.taskText, item.completed && styles.taskTextCompleted]}>
+          {item.text}
+        </Text>
+        <Text style={styles.subText}>Tap to view details</Text>
+      </TouchableOpacity>
+
+      {/* Delete Button */}
+      <TouchableOpacity onPress={() => handleDeleteTask(item.id)} style={styles.deleteButton}>
+        <Ionicons name="trash-outline" size={22} color="#FFF" />
+      </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -55,18 +76,15 @@ export default function TaskListScreen({ navigation }) {
         ListEmptyComponent={<Text style={styles.emptyText}>No tasks yet.</Text>}
       />
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.inputContainer}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.inputContainer}>
         <TextInput
           style={styles.input}
           placeholder="Type a new task..."
           value={task}
-          onChangeText={text => setTask(text)}
+          onChangeText={setTask}
         />
         <TouchableOpacity onPress={handleAddTask} style={styles.addButton}>
-          <Text style={styles.addButtonText}>Add</Text>
+          <Ionicons name="add" size={28} color="#FFF" />
         </TouchableOpacity>
       </KeyboardAvoidingView>
     </View>
@@ -81,11 +99,13 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'space-between', marginBottom: 15, 
     shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 3, elevation: 3 
   },
+  checkbox: { marginRight: 15 },
   taskTextContainer: { flex: 1 },
   taskText: { fontSize: 18, fontWeight: '600', color: '#333' },
+  // New style for completed text
+  taskTextCompleted: { textDecorationLine: 'line-through', color: '#A0A0A0' },
   subText: { fontSize: 12, color: '#888', marginTop: 4 },
-  deleteButton: { backgroundColor: '#FF3B30', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 6 },
-  deleteText: { color: '#FFF', fontWeight: 'bold' },
+  deleteButton: { backgroundColor: '#FF3B30', padding: 10, borderRadius: 8 },
   inputContainer: { 
     flexDirection: 'row', alignItems: 'center', padding: 20, 
     backgroundColor: '#FFFFFF', borderTopWidth: 1, borderColor: '#E0E0E0' 
@@ -95,9 +115,8 @@ const styles = StyleSheet.create({
     borderColor: '#C0C0C0', borderWidth: 1, marginRight: 10, fontSize: 16 
   },
   addButton: { 
-    backgroundColor: '#6200EE', paddingVertical: 15, paddingHorizontal: 20, 
-    borderRadius: 25, justifyContent: 'center', alignItems: 'center' 
+    backgroundColor: '#6200EE', width: 54, height: 54, borderRadius: 27, 
+    justifyContent: 'center', alignItems: 'center' 
   },
-  addButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
   emptyText: { textAlign: 'center', color: '#888', marginTop: 20, fontSize: 16 }
 });
